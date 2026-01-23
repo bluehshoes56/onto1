@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payments Intelligence Dashboard | January 23, 2026</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%);
+            min-height: 100vh;
+            color: #e4e9f0;
+            line-height: 1.6;
+        }
+        .container { max-width: 1500px; margin: 0 auto; padding: 30px; }
+        .header {
+            text-align: center;
+            padding: 40px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 40px;
+        }
+        .header h1 { font-size: 2.5rem; font-weight: 300; color: #fff; letter-spacing: 2px; margin-bottom: 10px; }
+        .header .subtitle { color: #64b5f6; font-size: 1.1rem; font-weight: 400; }
+        .header .date { color: #90a4ae; font-size: 0.95rem; margin-top: 8px; }
+        .header .powered-by { color: #546e7a; font-size: 0.8rem; margin-top: 5px; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 40px; }
+        .kpi-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .kpi-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .kpi-card .value { font-size: 2.2rem; font-weight: 600; margin-bottom: 8px; }
+        .kpi-card .label { color: #90a4ae; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
+        .kpi-card.positive .value { color: #4caf50; }
+        .kpi-card.negative .value { color: #f44336; }
+        .kpi-card.neutral .value { color: #64b5f6; }
+        .kpi-card.warning .value { color: #ff9800; }
+        .section { margin-bottom: 40px; }
+        .section-header { display: flex; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #64b5f6; }
+        .section-header h2 { font-size: 1.4rem; font-weight: 500; color: #fff; }
+        .section-header .icon {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, #64b5f6, #1976d2);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            margin-right: 15px; font-size: 1rem; color: #fff;
+        }
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+        .summary-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .summary-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+        .summary-card.high-impact::before { background: #f44336; }
+        .summary-card.medium-impact::before { background: #ff9800; }
+        .summary-card.positive-impact::before { background: #4caf50; }
+        .summary-card.info::before { background: #64b5f6; }
+        .summary-card h3 { font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 10px; }
+        .summary-card p { font-size: 0.9rem; color: #b0bec5; }
+        .impact-badge {
+            display: inline-block; padding: 3px 10px; border-radius: 20px;
+            font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.5px; margin-top: 12px;
+        }
+        .impact-badge.negative { background: rgba(244,67,54,0.2); color: #f44336; }
+        .impact-badge.positive { background: rgba(76,175,80,0.2); color: #4caf50; }
+        .impact-badge.mixed { background: rgba(255,152,0,0.2); color: #ff9800; }
+        .impact-badge.watch { background: rgba(100,181,246,0.2); color: #64b5f6; }
+        .table-container {
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .table-scroll { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th {
+            background: rgba(100,181,246,0.15);
+            color: #64b5f6;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            padding: 16px 12px;
+            text-align: left;
+            white-space: nowrap;
+        }
+        td { padding: 14px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #cfd8dc; }
+        tr:hover td { background: rgba(255,255,255,0.03); }
+        .tag { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 500; margin: 2px; }
+        .tag-naics { background: rgba(156,39,176,0.2); color: #ce93d8; }
+        .tag-network { background: rgba(0,150,136,0.2); color: #80cbc4; }
+        .tag-merchant { background: rgba(255,193,7,0.2); color: #ffd54f; }
+        .tag-category { background: rgba(33,150,243,0.2); color: #64b5f6; }
+        .confidence-bar { width: 60px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 8px; }
+        .confidence-fill { height: 100%; border-radius: 3px; }
+        .confidence-high .confidence-fill { background: #4caf50; }
+        .confidence-med .confidence-fill { background: #ff9800; }
+        .confidence-low .confidence-fill { background: #f44336; }
+        .impact-positive { color: #4caf50; }
+        .impact-negative { color: #f44336; }
+        .impact-mixed { color: #ff9800; }
+        .impact-unclear { color: #90a4ae; }
+        .source-link { color: #64b5f6; text-decoration: none; font-size: 0.8rem; padding: 4px 8px; border-radius: 4px; background: rgba(100,181,246,0.1); transition: background 0.2s; }
+        .source-link:hover { background: rgba(100,181,246,0.25); }
+        .footer { text-align: center; padding: 30px; color: #546e7a; font-size: 0.85rem; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 40px; }
+        .notes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; }
+        .note-item { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 15px; border-left: 3px solid #64b5f6; }
+        .note-item h4 { font-size: 0.9rem; color: #64b5f6; margin-bottom: 8px; }
+        .note-item p { font-size: 0.82rem; color: #90a4ae; }
+        @media print {
+            body { background: #fff; color: #333; }
+            .kpi-card, .summary-card, .table-container, .note-item { border: 1px solid #ddd; background: #f9f9f9; }
+            .section-header { border-color: #333; }
+            .source-link { color: #1976d2; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>PAYMENTS INTELLIGENCE</h1>
+            <div class="subtitle">Macro, Competitive & Network Analytics</div>
+            <div class="date">January 23, 2026 | Daily Briefing</div>
+            <div class="powered-by">Powered by Azure OpenAI + Semantic Kernel</div>
+        </header>
+        <div class="kpi-grid">
+            <div class="kpi-card positive">
+                <div class="value">+4.2%</div>
+                <div class="label">Holiday Spend YoY</div>
+            </div>
+            <div class="kpi-card negative">
+                <div class="value">$52.9M</div>
+                <div class="label">FTC Enforcement</div>
+            </div>
+            <div class="kpi-card warning">
+                <div class="value">70%</div>
+                <div class="label">Banks Fraud Spend</div>
+            </div>
+            <div class="kpi-card neutral">
+                <div class="value">16</div>
+                <div class="label">News Events Tracked</div>
+            </div>
+        </div>
+        <section class="section">
+            <div class="section-header">
+                <div class="icon">S</div>
+                <h2>Executive Summary</h2>
+            </div>
+            <div class="summary-grid">
+                <div class="summary-card high-impact">
+                    <h3>FTC Enforcement Action</h3>
+                    <p>Cliq (fka CardFlex) ordered to pay $52.9M - signals continued regulatory scrutiny on payment processors.</p>
+                    <span class="impact-badge negative">High Impact</span>
+                </div>
+                <div class="summary-card medium-impact">
+                    <h3>Geopolitical Sanctions</h3>
+                    <p>Treasury targeted Houthi, Iranian, and fraud networks. Cross-border payment volumes face increased friction.</p>
+                    <span class="impact-badge mixed">Monitor</span>
+                </div>
+                <div class="summary-card medium-impact">
+                    <h3>Card Networks vs. Merchants</h3>
+                    <p>Visa and Mastercard pushing back on merchant fee complaints. Watch for regulatory intervention.</p>
+                    <span class="impact-badge mixed">Developing</span>
+                </div>
+                <div class="summary-card positive-impact">
+                    <h3>Holiday Spend Strong</h3>
+                    <p>Visa data: U.S. holiday spending up 4.2% YoY. Consumer resilience continues.</p>
+                    <span class="impact-badge positive">Positive</span>
+                </div>
+                <div class="summary-card medium-impact">
+                    <h3>Fraud Spend Rising</h3>
+                    <p>70% of banks increasing fraud prevention budgets. Higher OpEx but reduced loss rates.</p>
+                    <span class="impact-badge mixed">Mixed</span>
+                </div>
+                <div class="summary-card medium-impact">
+                    <h3>Grocery Inflation Watch</h3>
+                    <p>Beef and coffee driving December grocery price increases. Higher average ticket but volume pressure.</p>
+                    <span class="impact-badge negative">Pressure</span>
+                </div>
+                <div class="summary-card info">
+                    <h3>Visa Earnings Preview</h3>
+                    <p>Q1 FY2026 results due Jan 29. Watch payment volume growth and cross-border trends.</p>
+                    <span class="impact-badge watch">Earnings Watch</span>
+                </div>
+                <div class="summary-card info">
+                    <h3>Stablecoin Infrastructure</h3>
+                    <p>Visa's stablecoin settlement launch marks meaningful step toward crypto-fiat integration.</p>
+                    <span class="impact-badge watch">Emerging</span>
+                </div>
+            </div>
+        </section>
+        <section class="section">
+            <div class="section-header">
+                <div class="icon">T</div>
+                <h2>Event Detail Table</h2>
+            </div>
+            <div class="table-container">
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Category</th>
+                                <th>NAICS3</th>
+                                <th>Product</th>
+                                <th>Merchant</th>
+                                <th>Network</th>
+                                <th>Event</th>
+                                <th>Summary</th>
+                                <th>Impact</th>
+                                <th>Confidence</th>
+                                <th>Source</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Jan 19</td>
+                                <td><span class="tag tag-category">Regulation</span></td>
+                                <td><span class="tag tag-naics">522</span></td>
+                                <td>Payment Processing</td>
+                                <td><span class="tag tag-merchant">Cliq</span></td>
+                                <td><span class="tag tag-network">Multiple</span></td>
+                                <td>Fraud Enforcement</td>
+                                <td>FTC orders $52.9M consumer refund</td>
+                                <td class="impact-negative">v Negative</td>
+                                <td><div class="confidence-bar confidence-high"><div class="confidence-fill" style="width:85%"></div></div>0.85</td>
+                                <td><a href="https://www.paymentsdive.com" target="_blank" class="source-link">Source</a></td>
+                            </tr>
+                            <tr>
+                                <td>Jan 16</td>
+                                <td><span class="tag tag-category">Geopolitics</span></td>
+                                <td><span class="tag tag-naics">522</span></td>
+                                <td>Cross-border</td>
+                                <td><span class="tag tag-merchant">Multiple</span></td>
+                                <td><span class="tag tag-network">SWIFT</span></td>
+                                <td>Sanctions</td>
+                                <td>Treasury sanctions Houthi networks</td>
+                                <td class="impact-mixed">* Mixed</td>
+                                <td><div class="confidence-bar confidence-med"><div class="confidence-fill" style="width:75%"></div></div>0.75</td>
+                                <td><a href="https://home.treasury.gov/news/press-releases" target="_blank" class="source-link">Source</a></td>
+                            </tr>
+                            <tr>
+                                <td>Jan 15</td>
+                                <td><span class="tag tag-category">Competitive</span></td>
+                                <td><span class="tag tag-naics">522</span></td>
+                                <td>Card Payments</td>
+                                <td><span class="tag tag-merchant">Visa</span></td>
+                                <td><span class="tag tag-network">Visa</span></td>
+                                <td>Earnings</td>
+                                <td>Q1 FY2026 results due Jan 29</td>
+                                <td class="impact-unclear">o Unclear</td>
+                                <td><div class="confidence-bar confidence-high"><div class="confidence-fill" style="width:90%"></div></div>0.90</td>
+                                <td><a href="https://usa.visa.com/about-visa/newsroom/press-releases.html" target="_blank" class="source-link">Source</a></td>
+                            </tr>
+                            <tr>
+                                <td>Jan 13</td>
+                                <td><span class="tag tag-category">Macro</span></td>
+                                <td><span class="tag tag-naics">522</span></td>
+                                <td>Card Payments</td>
+                                <td><span class="tag tag-merchant">Visa</span></td>
+                                <td><span class="tag tag-network">Visa</span></td>
+                                <td>Outlook</td>
+                                <td>2026 outlook: AI and trade reshaping economy</td>
+                                <td class="impact-mixed">* Mixed</td>
+                                <td><div class="confidence-bar confidence-med"><div class="confidence-fill" style="width:70%"></div></div>0.70</td>
+                                <td><a href="https://usa.visa.com/about-visa/newsroom/press-releases.html" target="_blank" class="source-link">Source</a></td>
+                            </tr>
+                            <tr>
+                                <td>Jan 12</td>
+                                <td><span class="tag tag-category">Regulation</span></td>
+                                <td><span class="tag tag-naics">522</span></td>
+                                <td>Consumer Lending</td>
+                                <td><span class="tag tag-merchant">Multiple</span></td>
+                                <td><span class="tag tag-network">Multiple</span></td>
+                                <td>Regulation</td>
+                                <td>CFPB/DOJ withdraw fair lending statement</td>
+                                <td class="impact-mixed">* Mixed</td>
+                                <td><div class="confidence-bar confidence-med"><div class="confidence-fill" style="width:70%"></div></div>0.70</td>
+                                <td><a href="https://www.consumerfinance.gov/about-us/newsroom/" target="_blank" class="source-link">Source</a></td>
+                            </tr>
+                            <tr>
+                                <td>Jan 19</td>
+                                <td><span class="tag tag-category">Payment Network</span></td>
+                                <td><span class="tag tag-naics">522</span></td>
+                                <td>Card Acceptance</td>
+                                <td><span class="tag tag-merchant">V/MA</span></td>
+                                <td><span class="tag tag-network">Visa/MC</span></td>
+                                <td>Pricing</td>
+                                <td>Networks rebuff merchant fee complaints</td>
+                                <td class="impact-negative">v Negative</td>
+                                <td><div class="confidence-bar confidence-med"><div class="confidence-fill" style="width:75%"></div></div>0.75</td>
+                                <td><a href="https://www.paymentsdive.com" target="_blank" class="source-link">Source</a></td>
+                            </tr>
+                            <tr>
+                                <td>Jan 19</td>
+                                <td><span class="tag tag-category">Competitive</span></td>
+                                <td><span class="tag tag-naics">522</span></td>
+                                <td>B2B Payments</td>
+                                <td><span class="tag tag-merchant">MC</span></td>
+                                <td><span class="tag tag-network">Mastercard</span></td>
+                                <td>Product</td>
+                                <td>Embedded payments for commercial</td>
+                                <td class="impact-positive">^ Positive</td>
+                                <td><div class="confidence-bar confidence-med"><div class="confidence-fill" style="width:70%"></div></div>0.70</td>
+                                <td><a href="https://www.pymnts.com" target="_blank" class="source-link">Source</a></td>
+                            </tr>
+                            <tr>
+                                <td>Jan 19</td>
+                                <td><span class="tag tag-category">Merchant</span></td>
+                                <td><span class="tag tag-naics">522</span></td>
+                                <td>Fraud Prevention</td>
+                                <td><span class="tag tag-merchant">Banks</span></td>
+                                <td><span class="tag tag-network">Multiple</span></td>
+                                <td>Expansion</td>
+                                <td>70% of banks increase fraud spend</td>
+                                <td class="impact-mixed">* Mixed</td>
+                                <td><div class="confidence-bar confidence-high"><div class="confidence-fill" style="width:80%"></div></div>0.80</td>
+                                <td><a href="https://www.pymnts.com" target="_blank" class="source-link">Source</a></td>
+                            </tr>
+                            <tr>
+                                <td>Dec 23</td>
+                                <td><span class="tag tag-category">Macro</span></td>
+                                <td><span class="tag tag-naics">441-454</span></td>
+                                <td>Holiday Retail</td>
+                                <td><span class="tag tag-merchant">Multiple</span></td>
+                                <td><span class="tag tag-network">Visa</span></td>
+                                <td>Data</td>
+                                <td>U.S. holiday spending +4.2% YoY</td>
+                                <td class="impact-positive">^ Positive</td>
+                                <td><div class="confidence-bar confidence-high"><div class="confidence-fill" style="width:90%"></div></div>0.90</td>
+                                <td><a href="https://usa.visa.com/about-visa/newsroom/press-releases.html" target="_blank" class="source-link">Source</a></td>
+                            </tr>
+                            <tr>
+                                <td>Dec 16</td>
+                                <td><span class="tag tag-category">Payment Network</span></td>
+                                <td><span class="tag tag-naics">522</span></td>
+                                <td>Stablecoin</td>
+                                <td><span class="tag tag-merchant">Visa</span></td>
+                                <td><span class="tag tag-network">Visa</span></td>
+                                <td>Product</td>
+                                <td>Visa launches stablecoin settlement</td>
+                                <td class="impact-positive">^ Positive</td>
+                                <td><div class="confidence-bar confidence-med"><div class="confidence-fill" style="width:75%"></div></div>0.75</td>
+                                <td><a href="https://usa.visa.com/about-visa/newsroom/press-releases.html" target="_blank" class="source-link">Source</a></td>
+                            </tr>
+                            <tr>
+                                <td>Jan 19</td>
+                                <td><span class="tag tag-category">Macro</span></td>
+                                <td><span class="tag tag-naics">445</span></td>
+                                <td>Fresh Food</td>
+                                <td><span class="tag tag-merchant">Grocers</span></td>
+                                <td><span class="tag tag-network">Multiple</span></td>
+                                <td>Pricing</td>
+                                <td>Beef and coffee driving inflation</td>
+                                <td class="impact-negative">v Negative</td>
+                                <td><div class="confidence-bar confidence-high"><div class="confidence-fill" style="width:80%"></div></div>0.80</td>
+                                <td><a href="https://www.grocerydive.com" target="_blank" class="source-link">Source</a></td>
+                            </tr>
+                            <tr>
+                                <td>Jan 19</td>
+                                <td><span class="tag tag-category">Competitive</span></td>
+                                <td><span class="tag tag-naics">445</span></td>
+                                <td>Grocery Retail</td>
+                                <td><span class="tag tag-merchant">Walmart</span></td>
+                                <td><span class="tag tag-network">Multiple</span></td>
+                                <td>Expansion</td>
+                                <td>AI scaling from pilot to transformation</td>
+                                <td class="impact-mixed">* Mixed</td>
+                                <td><div class="confidence-bar confidence-med"><div class="confidence-fill" style="width:75%"></div></div>0.75</td>
+                                <td><a href="https://www.grocerydive.com" target="_blank" class="source-link">Source</a></td>
+                            </tr>
+                            <tr>
+                                <td>Jan 19</td>
+                                <td><span class="tag tag-category">Competitive</span></td>
+                                <td><span class="tag tag-naics">445</span></td>
+                                <td>Grocery Retail</td>
+                                <td><span class="tag tag-merchant">Albertsons</span></td>
+                                <td><span class="tag tag-network">Multiple</span></td>
+                                <td>Earnings</td>
+                                <td>CEO pushes for higher valuation</td>
+                                <td class="impact-unclear">o Unclear</td>
+                                <td><div class="confidence-bar confidence-low"><div class="confidence-fill" style="width:60%"></div></div>0.60</td>
+                                <td><a href="https://www.grocerydive.com" target="_blank" class="source-link">Source</a></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        <section class="section">
+            <div class="section-header">
+                <div class="icon">N</div>
+                <h2>Analyst Notes</h2>
+            </div>
+            <div class="notes-grid">
+                <div class="note-item">
+                    <h4>FTC - Cliq Enforcement</h4>
+                    <p>Payment processor ordered to refund $52.9M. Affects NAICS 522. May cause merchant churn and processor consolidation.</p>
+                </div>
+                <div class="note-item">
+                    <h4>Treasury Sanctions</h4>
+                    <p>Multiple enforcement actions targeting Houthi, Iran, and domestic fraud networks. Impacts wire/SWIFT volumes.</p>
+                </div>
+                <div class="note-item">
+                    <h4>Visa Q1 Earnings</h4>
+                    <p>Results Jan 29. Prior holiday data (+4.2%) suggests resilient volumes. Watch cross-border commentary.</p>
+                </div>
+                <div class="note-item">
+                    <h4>Merchant Fee Dispute</h4>
+                    <p>Visa/Mastercard rejecting merchant complaints. Interchange economics remain contested.</p>
+                </div>
+                <div class="note-item">
+                    <h4>Grocery Inflation</h4>
+                    <p>NAICS 445 affected by beef/coffee prices. Average ticket rising; unit volume may decline.</p>
+                </div>
+                <div class="note-item">
+                    <h4>Bank Fraud Spending</h4>
+                    <p>70% of banks increasing fraud budgets. Positive for loss reduction.</p>
+                </div>
+                <div class="note-item">
+                    <h4>Stablecoin Settlement</h4>
+                    <p>Visa launched U.S. stablecoin settlement Dec 2025. New payment rail emerging.</p>
+                </div>
+                <div class="note-item">
+                    <h4>Confidence Scoring</h4>
+                    <p>0.9 = high (direct announcement), 0.7 = moderate (implied), 0.6 = low (uncertain).</p>
+                </div>
+            </div>
+        </section>
+        <footer class="footer">
+            <p>Payments Intelligence Dashboard | Data Sources: Federal Reserve, Treasury, CFPB, Visa, Payments Dive, PYMNTS, Grocery Dive</p>
+            <p style="margin-top:8px;">Generated January 23, 2026 | Microsoft Azure OpenAI | For internal use only</p>
+        </footer>
+    </div>
+</body>
+</html>
